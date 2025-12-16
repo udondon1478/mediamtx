@@ -117,6 +117,7 @@ func (s *Server) Initialize() error {
 		Handler:           s,
 		ReadTimeout:       time.Duration(s.ReadTimeout),
 		WriteTimeout:      time.Duration(s.WriteTimeout),
+		IdleTimeout:       120 * time.Second, // Extended from default 60s to fix VRChat disconnect
 		UDPReadBufferSize: int(s.UDPReadBufferSize),
 		WriteQueueSize:    s.WriteQueueSize,
 		RTSPAddress:       s.Address,
