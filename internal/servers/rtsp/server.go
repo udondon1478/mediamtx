@@ -87,6 +87,7 @@ type Server struct {
 	ServerCert          string
 	ServerKey           string
 	RTSPAddress         string
+	SessionTimeout      conf.Duration
 	Transports          conf.RTSPTransports
 	RunOnConnect        string
 	RunOnConnectRestart bool
@@ -115,9 +116,14 @@ func (s *Server) Initialize() error {
 
 	s.srv = &gortsplib.Server{
 		Handler:           s,
-		ReadTimeout:       time.Duration(s.ReadTimeout),
-		WriteTimeout:      time.Duration(s.WriteTimeout),
-		IdleTimeout:       120 * time.Second, // Extended from default 60s to fix VRChat disconnect
+		ReadTimeout:  time.Duration(s.ReadTimeout),
+		WriteTimeout: time.Duration(s.WriteTimeout),
+		IdleTimeout: func() time.Duration {
+			if s.SessionTimeout == 0 {
+				return 60 * time.Second
+			}
+			return time.Duration(s.SessionTimeout)
+		}(),
 		UDPReadBufferSize: int(s.UDPReadBufferSize),
 		WriteQueueSize:    s.WriteQueueSize,
 		RTSPAddress:       s.Address,
