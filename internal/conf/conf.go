@@ -240,6 +240,7 @@ type Conf struct {
 	RTSPServerCert        string           `json:"rtspServerCert"`
 	AuthMethods           *RTSPAuthMethods `json:"authMethods,omitempty"` // deprecated
 	RTSPAuthMethods       RTSPAuthMethods  `json:"rtspAuthMethods"`
+	RTSPSessionTimeout    Duration         `json:"rtspSessionTimeout"`
 	RTSPUDPReadBufferSize *uint            `json:"rtspUDPReadBufferSize,omitempty"` // deprecated
 
 	// RTMP server

@@ -284,7 +284,13 @@ rtspServerKey: server.key
 rtspServerCert: server.crt
 # Authentication methods. Available are "basic" and "digest".
 # "digest" doesn't provide any additional security and is available for compatibility only.
+# Authentication methods. Available are "basic" and "digest".
+# "digest" doesn't provide any additional security and is available for compatibility only.
 rtspAuthMethods: [basic]
+# Timeout of the RTSP session.
+# This corresponds to the timeout of the TCP connection (when using TCP)
+# or of the UDP/RTP/RTCP packets (when using UDP).
+rtspSessionTimeout: 60s
 
 ###############################################
 # Global settings -> RTMP server
