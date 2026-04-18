@@ -2,7 +2,6 @@
 package httpp
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
 	"log"
@@ -14,7 +13,9 @@ import (
 
 	"github.com/bluenviron/mediamtx/internal/certloader"
 	"github.com/bluenviron/mediamtx/internal/logger"
+	"github.com/bluenviron/mediamtx/internal/packetdumper"
 	"github.com/bluenviron/mediamtx/internal/restrictnetwork"
+	"golang.org/x/net/http2"
 )
 
 type nilWriter struct{}
@@ -31,19 +32,22 @@ func (nilWriter) Write(p []byte) (int, error) {
 // - server header
 // - filtering of invalid requests
 type Server struct {
-	Address      string
-	AllowOrigins []string
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	Encryption   bool
-	ServerCert   string
-	ServerKey    string
-	Handler      http.Handler
-	Parent       logger.Writer
+	Address           string
+	AllowOrigins      []string
+	DumpPackets       bool
+	DumpPacketsPrefix string
+	ReadTimeout       time.Duration
+	WriteTimeout      time.Duration
+	Encryption        bool
+	ServerCert        string
+	ServerKey         string
+	Handler           http.Handler
+	Parent            logger.Writer
 
-	ln     net.Listener
-	inner  *http.Server
-	loader *certloader.CertLoader
+	ln      net.Listener
+	inner   *http.Server
+	loader  *certloader.CertLoader
+	tracker *handlerTracker
 }
 
 // Initialize initializes a Server.
@@ -56,6 +60,7 @@ func (s *Server) Initialize() error {
 	}
 
 	var tlsConfig *tls.Config
+
 	if s.Encryption {
 		if s.ServerCert == "" {
 			return fmt.Errorf("server cert is missing")
@@ -90,16 +95,6 @@ func (s *Server) Initialize() error {
 		os.Remove(address)
 	}
 
-	var err error
-	s.ln, err = net.Listen(network, address)
-	if err != nil {
-		return err
-	}
-
-	if network == "unix" {
-		os.Chmod(address, 0o755) //nolint:errcheck
-	}
-
 	h := s.Handler
 	h = &handlerOrigin{h, s.AllowOrigins}
 	h = &handlerServerHeader{h}
@@ -107,6 +102,8 @@ func (s *Server) Initialize() error {
 	h = &handlerLogger{h, s.Parent}
 	h = &handlerExitOnPanic{h}
 	h = &handlerWriteTimeout{h, s.WriteTimeout}
+	s.tracker = &handlerTracker{h: h}
+	h = s.tracker
 
 	s.inner = &http.Server{
 		Handler:   h,
@@ -122,20 +119,57 @@ func (s *Server) Initialize() error {
 	}
 
 	if tlsConfig != nil {
-		go s.inner.ServeTLS(s.ln, "", "")
-	} else {
-		go s.inner.Serve(s.ln)
+		err := http2.ConfigureServer(s.inner, &http2.Server{})
+		if err != nil {
+			return err
+		}
 	}
+
+	var listen func(network string, address string) (net.Listener, error)
+	var tlsListen func(network string, laddr string, config *tls.Config) (net.Listener, error)
+
+	if s.DumpPackets {
+		listen = (&packetdumper.Listen{
+			Prefix: s.DumpPacketsPrefix,
+		}).Do
+
+		tlsListen = (&packetdumper.TLSListen{
+			Listen: listen,
+		}).Do
+	} else {
+		listen = net.Listen
+		tlsListen = tls.Listen
+	}
+
+	if tlsConfig != nil {
+		var err error
+		s.ln, err = tlsListen(network, address, tlsConfig)
+		if err != nil {
+			return err
+		}
+	} else {
+		var err error
+		s.ln, err = listen(network, address)
+		if err != nil {
+			return err
+		}
+	}
+
+	if network == "unix" {
+		os.Chmod(address, 0o755) //nolint:errcheck
+	}
+
+	go s.inner.Serve(s.ln)
 
 	return nil
 }
 
 // Close closes all resources and waits for all routines to return.
 func (s *Server) Close() {
-	ctx, ctxCancel := context.WithCancel(context.Background())
-	ctxCancel()
-	s.inner.Shutdown(ctx)
-	s.ln.Close() // in case Shutdown() is called before Serve()
+	s.ln.Close()
+	s.inner.Close() //nolint:errcheck
+	s.tracker.close()
+
 	if s.loader != nil {
 		s.loader.Close()
 	}

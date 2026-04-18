@@ -12,14 +12,13 @@ import (
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/defs"
 	"github.com/bluenviron/mediamtx/internal/logger"
-	"github.com/bluenviron/mediamtx/internal/stream"
 )
 
 // ErrMuxerNotFound is returned when a muxer is not found.
 var ErrMuxerNotFound = errors.New("muxer not found")
 
 func interfaceIsEmpty(i any) bool {
-	return reflect.ValueOf(i).Kind() != reflect.Ptr || reflect.ValueOf(i).IsNil()
+	return reflect.ValueOf(i).Kind() != reflect.Pointer || reflect.ValueOf(i).IsNil()
 }
 
 type serverGetMuxerRes struct {
@@ -60,8 +59,8 @@ type serverMetrics interface {
 
 type serverPathManager interface {
 	SetHLSServer(*Server) []defs.Path
-	FindPathConf(req defs.PathFindPathConfReq) (*conf.Path, error)
-	AddReader(req defs.PathAddReaderReq) (defs.Path, *stream.Stream, error)
+	FindPathConf(req defs.PathFindPathConfReq) (*defs.PathFindPathConfRes, error)
+	AddReader(req defs.PathAddReaderReq) (*defs.PathAddReaderRes, error)
 }
 
 type serverParent interface {
@@ -71,6 +70,7 @@ type serverParent interface {
 // Server is a HLS server.
 type Server struct {
 	Address         string
+	DumpPackets     bool
 	Encryption      bool
 	ServerKey       string
 	ServerCert      string
@@ -121,6 +121,7 @@ func (s *Server) Initialize() error {
 
 	s.httpServer = &httpServer{
 		address:        s.Address,
+		dumpPackets:    s.DumpPackets,
 		encryption:     s.Encryption,
 		serverKey:      s.ServerKey,
 		serverCert:     s.ServerCert,
@@ -137,7 +138,13 @@ func (s *Server) Initialize() error {
 		return err
 	}
 
-	s.Log(logger.Info, "listener opened on "+s.Address)
+	str := "listener opened on " + s.Address
+	if !s.Encryption {
+		str += " (TCP/HTTP)"
+	} else {
+		str += " (TCP/HTTPS)"
+	}
+	s.Log(logger.Info, str)
 
 	s.wg.Add(1)
 	go s.run()
@@ -217,11 +224,11 @@ outer:
 
 		case req := <-s.chAPIMuxerList:
 			data := &defs.APIHLSMuxerList{
-				Items: []*defs.APIHLSMuxer{},
+				Items: []defs.APIHLSMuxer{},
 			}
 
 			for _, muxer := range s.muxers {
-				data.Items = append(data.Items, muxer.apiItem())
+				data.Items = append(data.Items, *muxer.apiItem())
 			}
 
 			sort.Slice(data.Items, func(i, j int) bool {

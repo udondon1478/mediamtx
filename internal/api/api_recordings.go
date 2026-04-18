@@ -13,6 +13,27 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func recordingsOfPath(
+	pathConf *conf.Path,
+	pathName string,
+) *defs.APIRecording {
+	ret := &defs.APIRecording{
+		Name: pathName,
+	}
+
+	segments, _ := recordstore.FindSegments(pathConf, pathName, nil, nil)
+
+	ret.Segments = make([]defs.APIRecordingSegment, len(segments))
+
+	for i, seg := range segments {
+		ret.Segments[i] = defs.APIRecordingSegment{
+			Start: seg.Start,
+		}
+	}
+
+	return ret
+}
+
 func (a *API) onRecordingsList(ctx *gin.Context) {
 	a.mutex.RLock()
 	c := a.Conf
@@ -30,11 +51,11 @@ func (a *API) onRecordingsList(ctx *gin.Context) {
 	}
 	data.PageCount = pageCount
 
-	data.Items = make([]*defs.APIRecording, len(pathNames))
+	data.Items = make([]defs.APIRecording, len(pathNames))
 
 	for i, pathName := range pathNames {
 		pathConf, _, _ := conf.FindPathConf(c.Paths, pathName)
-		data.Items[i] = recordingsOfPath(pathConf, pathName)
+		data.Items[i] = *recordingsOfPath(pathConf, pathName)
 	}
 
 	ctx.JSON(http.StatusOK, data)

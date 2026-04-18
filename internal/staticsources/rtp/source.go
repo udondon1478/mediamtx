@@ -13,10 +13,13 @@ import (
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/counterdumper"
 	"github.com/bluenviron/mediamtx/internal/defs"
+	"github.com/bluenviron/mediamtx/internal/errordumper"
 	"github.com/bluenviron/mediamtx/internal/logger"
+	"github.com/bluenviron/mediamtx/internal/packetdumper"
 	"github.com/bluenviron/mediamtx/internal/protocols/udp"
 	"github.com/bluenviron/mediamtx/internal/protocols/unix"
 	"github.com/bluenviron/mediamtx/internal/stream"
+	"github.com/bluenviron/mediamtx/internal/unit"
 	"github.com/pion/rtp"
 )
 
@@ -28,6 +31,7 @@ type parent interface {
 
 // Source is a RTP static source.
 type Source struct {
+	DumpPackets       bool
 	ReadTimeout       conf.Duration
 	UDPReadBufferSize uint
 	Parent            parent
@@ -62,11 +66,17 @@ func (s *Source) Run(params defs.StaticSourceRunParams) error {
 	var nc net.Conn
 
 	switch u.Scheme {
-	case "unix+rtp":
-		nc, err = unix.CreateConn(u)
+	case "unix+rtp": // deprecated
+		params := unix.URLToParams(u)
+		l := &unix.Listener{
+			Path:   params.Path,
+			Listen: net.Listen,
+		}
+		err = l.Initialize()
 		if err != nil {
 			return err
 		}
+		nc = l
 
 	default:
 		udpReadBufferSize := s.UDPReadBufferSize
@@ -74,10 +84,25 @@ func (s *Source) Run(params defs.StaticSourceRunParams) error {
 			udpReadBufferSize = *params.Conf.RTPUDPReadBufferSize
 		}
 
-		nc, err = udp.CreateConn(u, int(udpReadBufferSize))
+		params := udp.URLToParams(u)
+		l := &udp.Listener{
+			Address:           params.Address,
+			Source:            params.Source,
+			IntfName:          params.IntfName,
+			UDPReadBufferSize: int(udpReadBufferSize),
+		}
+
+		if s.DumpPackets {
+			l.ListenPacket = (&packetdumper.ListenPacket{
+				Prefix: "rtp_source_packet_conn",
+			}).Do
+		}
+
+		err = l.Initialize()
 		if err != nil {
 			return err
 		}
+		nc = l
 	}
 
 	readerErr := make(chan error)
@@ -102,7 +127,7 @@ func (s *Source) Run(params defs.StaticSourceRunParams) error {
 }
 
 func (s *Source) runReader(desc *description.Session, nc net.Conn) error {
-	packetsLost := &counterdumper.CounterDumper{
+	packetsLost := &counterdumper.Dumper{
 		OnReport: func(val uint64) {
 			s.Log(logger.Warn, "%d RTP %s lost",
 				val,
@@ -118,22 +143,19 @@ func (s *Source) runReader(desc *description.Session, nc net.Conn) error {
 	packetsLost.Start()
 	defer packetsLost.Stop()
 
-	decodeErrors := &counterdumper.CounterDumper{
-		OnReport: func(val uint64) {
-			s.Log(logger.Warn, "%d decode %s",
-				val,
-				func() string {
-					if val == 1 {
-						return "error"
-					}
-					return "errors"
-				}())
+	decodeErrors := &errordumper.Dumper{
+		OnReport: func(val uint64, last error) {
+			if val == 1 {
+				s.Log(logger.Warn, "decode error: %v", last)
+			} else {
+				s.Log(logger.Warn, "%d decode errors, last was: %v", val, last)
+			}
 		},
 	}
 	decodeErrors.Start()
 	defer decodeErrors.Stop()
 
-	var stream *stream.Stream
+	var subStream *stream.SubStream
 
 	timeDecoder := &rtptime.GlobalDecoder{}
 	timeDecoder.Initialize()
@@ -168,18 +190,18 @@ func (s *Source) runReader(desc *description.Session, nc net.Conn) error {
 		var pkt rtp.Packet
 		err = pkt.Unmarshal(buf[:n])
 		if err != nil {
-			if stream != nil {
-				decodeErrors.Increase()
+			if subStream != nil {
+				decodeErrors.Add(err)
 				continue
 			}
 			return err
 		}
 
-		if stream == nil {
+		if subStream == nil {
 			res := s.Parent.SetReady(defs.PathSourceStaticSetReadyReq{
-				Desc:               desc,
-				GenerateRTPPackets: false,
-				FillNTP:            true,
+				Desc:          desc,
+				UseRTPPackets: true,
+				ReplaceNTP:    true,
 			})
 			if res.Err != nil {
 				return res.Err
@@ -187,7 +209,7 @@ func (s *Source) runReader(desc *description.Session, nc net.Conn) error {
 
 			defer s.Parent.SetNotReady(defs.PathSourceStaticSetNotReadyReq{})
 
-			stream = res.Stream
+			subStream = res.SubStream
 		}
 
 		media, ok := mediasByPayloadType[pkt.PayloadType]
@@ -209,15 +231,18 @@ func (s *Source) runReader(desc *description.Session, nc net.Conn) error {
 				continue
 			}
 
-			stream.WriteRTPPacket(media.desc, forma.desc, pkt, time.Time{}, pts)
+			subStream.WriteUnit(media.desc, forma.desc, &unit.Unit{
+				PTS:        pts,
+				RTPPackets: []*rtp.Packet{pkt},
+			})
 		}
 	}
 }
 
 // APISourceDescribe implements StaticSource.
-func (*Source) APISourceDescribe() defs.APIPathSourceOrReader {
-	return defs.APIPathSourceOrReader{
-		Type: "rtpSource",
+func (*Source) APISourceDescribe() *defs.APIPathSource {
+	return &defs.APIPathSource{
+		Type: defs.APIPathSourceTypeRTPSource,
 		ID:   "",
 	}
 }

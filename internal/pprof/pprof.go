@@ -1,7 +1,8 @@
 // Package pprof contains a pprof exporter.
-package pprof
+package pprof //nolint:revive
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -17,7 +18,7 @@ import (
 )
 
 type pprofAuthManager interface {
-	Authenticate(req *auth.Request) *auth.Error
+	Authenticate(req *auth.Request) (string, *auth.Error)
 }
 
 type pprofParent interface {
@@ -27,6 +28,7 @@ type pprofParent interface {
 // PPROF is a pprof exporter.
 type PPROF struct {
 	Address        string
+	DumpPackets    bool
 	Encryption     bool
 	ServerKey      string
 	ServerCert     string
@@ -51,22 +53,30 @@ func (pp *PPROF) Initialize() error {
 	pprof.Register(router)
 
 	pp.httpServer = &httpp.Server{
-		Address:      pp.Address,
-		AllowOrigins: pp.AllowOrigins,
-		ReadTimeout:  time.Duration(pp.ReadTimeout),
-		WriteTimeout: time.Duration(pp.WriteTimeout),
-		Encryption:   pp.Encryption,
-		ServerCert:   pp.ServerCert,
-		ServerKey:    pp.ServerKey,
-		Handler:      router,
-		Parent:       pp,
+		Address:           pp.Address,
+		DumpPackets:       pp.DumpPackets,
+		AllowOrigins:      pp.AllowOrigins,
+		DumpPacketsPrefix: "pprof_server_conn",
+		ReadTimeout:       time.Duration(pp.ReadTimeout),
+		WriteTimeout:      time.Duration(pp.WriteTimeout),
+		Encryption:        pp.Encryption,
+		ServerCert:        pp.ServerCert,
+		ServerKey:         pp.ServerKey,
+		Handler:           router,
+		Parent:            pp,
 	}
 	err := pp.httpServer.Initialize()
 	if err != nil {
 		return err
 	}
 
-	pp.Log(logger.Info, "listener opened on "+pp.Address)
+	str := "listener opened on " + pp.Address
+	if !pp.Encryption {
+		str += " (TCP/HTTP)"
+	} else {
+		str += " (TCP/HTTPS)"
+	}
+	pp.Log(logger.Info, str)
 
 	return nil
 }
@@ -92,6 +102,13 @@ func (pp *PPROF) middlewarePreflightRequests(ctx *gin.Context) {
 	}
 }
 
+func (pp *PPROF) writeErrorNoLog(ctx *gin.Context, status int, err error) {
+	ctx.AbortWithStatusJSON(status, &defs.APIError{
+		Status: defs.APIErrorStatusError,
+		Error:  err.Error(),
+	})
+}
+
 func (pp *PPROF) middlewareAuth(ctx *gin.Context) {
 	req := &auth.Request{
 		Action:      conf.AuthActionPprof,
@@ -100,14 +117,11 @@ func (pp *PPROF) middlewareAuth(ctx *gin.Context) {
 		IP:          net.ParseIP(ctx.ClientIP()),
 	}
 
-	err := pp.AuthManager.Authenticate(req)
+	_, err := pp.AuthManager.Authenticate(req)
 	if err != nil {
 		if err.AskCredentials {
 			ctx.Header("WWW-Authenticate", `Basic realm="mediamtx"`)
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, &defs.APIError{
-				Status: "error",
-				Error:  "authentication error",
-			})
+			pp.writeErrorNoLog(ctx, http.StatusUnauthorized, fmt.Errorf("authentication error"))
 			return
 		}
 
@@ -116,10 +130,7 @@ func (pp *PPROF) middlewareAuth(ctx *gin.Context) {
 		// wait some seconds to delay brute force attacks
 		<-time.After(auth.PauseAfterError)
 
-		ctx.AbortWithStatusJSON(http.StatusUnauthorized, &defs.APIError{
-			Status: "error",
-			Error:  "authentication error",
-		})
+		pp.writeErrorNoLog(ctx, http.StatusUnauthorized, fmt.Errorf("authentication error"))
 		return
 	}
 }
