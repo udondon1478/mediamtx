@@ -919,12 +919,13 @@ func (pa *path) startRecording() {
 				env["MTX_SEGMENT_PATH"] = segmentPath
 
 				pa.Log(logger.Info, "runOnRecordSegmentCreate command launched")
-				externalcmd.NewCmd(
-					pa.externalCmdPool,
-					pa.conf.RunOnRecordSegmentCreate,
-					false,
-					env,
-					nil)
+				cmd := &externalcmd.Cmd{
+					Pool:    pa.externalCmdPool,
+					Cmdstr:  pa.conf.RunOnRecordSegmentCreate,
+					Restart: false,
+					Env:     env,
+				}
+				cmd.Start()
 			}
 		},
 		OnSegmentComplete: func(segmentPath string, segmentDuration time.Duration) {
@@ -934,12 +935,13 @@ func (pa *path) startRecording() {
 				env["MTX_SEGMENT_DURATION"] = strconv.FormatFloat(segmentDuration.Seconds(), 'f', -1, 64)
 
 				pa.Log(logger.Info, "runOnRecordSegmentComplete command launched")
-				externalcmd.NewCmd(
-					pa.externalCmdPool,
-					pa.conf.RunOnRecordSegmentComplete,
-					false,
-					env,
-					nil)
+				cmd := &externalcmd.Cmd{
+					Pool:    pa.externalCmdPool,
+					Cmdstr:  pa.conf.RunOnRecordSegmentComplete,
+					Restart: false,
+					Env:     env,
+				}
+				cmd.Start()
 			}
 		},
 		Parent: pa,

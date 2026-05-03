@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	gopath "path"
+	"path"
 	"strings"
 	"time"
 
@@ -27,11 +27,27 @@ var hlsIndex []byte
 //go:embed hls.min.js
 var hlsMinJS []byte
 
-func mergePathAndQuery(path string, rawQuery string) string {
-	res := path
+func trailingSlashLocation(rawPath string, rawQuery string) string {
+	res := path.Clean(rawPath)
+	res = strings.TrimLeft(res, "/\\")
+	res = "/" + res + "/"
+
 	if rawQuery != "" {
 		res += "?" + rawQuery
 	}
+
+	return res
+}
+
+func sanitizeLocation(rawPath string, rawQuery string) string {
+	res := path.Clean(rawPath)
+	res = strings.TrimLeft(res, "/\\")
+	res = "/" + res
+
+	if rawQuery != "" {
+		res += "?" + rawQuery
+	}
+
 	return res
 }
 
@@ -51,6 +67,7 @@ type httpServer struct {
 	trustedProxies conf.IPNetworks
 	readTimeout    conf.Duration
 	writeTimeout   conf.Duration
+	cdnSecret      string
 	pathManager    serverPathManager
 	parent         *Server
 
@@ -153,7 +170,7 @@ func (s *httpServer) onRequest(ctx *gin.Context) {
 		return
 
 	case strings.HasSuffix(pa, ".m3u8"):
-		dir, fname = gopath.Dir(pa), gopath.Base(pa)
+		dir, fname = path.Dir(pa), path.Base(pa)
 
 		if fname == "index.m3u8" {
 			contentTyp = multivariantPlaylist
@@ -164,7 +181,7 @@ func (s *httpServer) onRequest(ctx *gin.Context) {
 	case strings.HasSuffix(pa, ".ts") ||
 		strings.HasSuffix(pa, ".mp4") ||
 		strings.HasSuffix(pa, ".mp"):
-		dir, fname = gopath.Dir(pa), gopath.Base(pa)
+		dir, fname = path.Dir(pa), path.Base(pa)
 
 		if strings.HasSuffix(fname, ".mp") {
 			fname += "4"
@@ -176,14 +193,16 @@ func (s *httpServer) onRequest(ctx *gin.Context) {
 		dir = pa
 
 		if !strings.HasSuffix(dir, "/") {
-			ctx.Header("Location", mergePathAndQuery(ctx.Request.URL.Path+"/", ctx.Request.URL.RawQuery))
-			ctx.Writer.WriteHeader(http.StatusMovedPermanently)
+			ctx.Header("Location", trailingSlashLocation(ctx.Request.URL.Path, ctx.Request.URL.RawQuery))
+			ctx.Writer.WriteHeader(http.StatusFound)
 			return
 		}
 
 		dir = dir[:len(dir)-1]
 		contentTyp = index
 	}
+
+	isCDN := (s.cdnSecret != "" && ctx.Request.Header.Get("Authorization") == "Bearer "+s.cdnSecret)
 
 	switch contentTyp {
 	case index:
@@ -225,6 +244,58 @@ func (s *httpServer) onRequest(ctx *gin.Context) {
 		ctx.Writer.Write(hlsIndex)
 
 	case multivariantPlaylist:
+		if isCDN {
+			if existingMuxer, err := s.parent.getMuxer(serverGetMuxerReq{path: dir, create: false}); err == nil {
+				if sx := existingMuxer.getCDNSession(); sx != nil {
+					sx.lastRequestTime.Store(time.Now().UnixNano())
+
+					ctx.Writer = &responseWriterCounter{
+						ResponseWriter: ctx.Writer,
+						bytesSent:      &sx.bytesSent,
+					}
+					ctx.Request.URL.Path = fname
+
+					err = existingMuxer.handleRequest(ctx, isCDN)
+					if err != nil {
+						s.writeErrorNoLog(ctx, http.StatusInternalServerError, err)
+					}
+					return
+				}
+			}
+
+			sx := &session{
+				isCDN:           true,
+				remoteAddr:      httpp.RemoteAddr(ctx),
+				pathName:        dir,
+				externalCmdPool: s.parent.ExternalCmdPool,
+				pathManager:     s.pathManager,
+				server:          s.parent,
+			}
+			err := sx.initialize(ctx)
+			if err != nil {
+				var terr2 *defs.PathNoStreamAvailableError
+				if errors.As(err, &terr2) {
+					s.writeErrorNoLog(ctx, http.StatusNotFound, err)
+					return
+				}
+
+				s.writeErrorNoLog(ctx, http.StatusInternalServerError, err)
+				return
+			}
+
+			ctx.Writer = &responseWriterCounter{
+				ResponseWriter: ctx.Writer,
+				bytesSent:      &sx.bytesSent,
+			}
+			ctx.Request.URL.Path = fname
+
+			err = sx.muxer.handleRequest(ctx, isCDN)
+			if err != nil {
+				s.writeErrorNoLog(ctx, http.StatusInternalServerError, err)
+			}
+			return
+		}
+
 		if ctx.Request.URL.Query().Get("cookieCheck") != "1" {
 			http.SetCookie(ctx.Writer, &http.Cookie{
 				Name:  "cookieCheck",
@@ -243,7 +314,7 @@ func (s *httpServer) onRequest(ctx *gin.Context) {
 			q := ctx.Request.URL.Query()
 			q.Set("cookieCheck", "1")
 			ctx.Request.URL.RawQuery = q.Encode()
-			ctx.Writer.Header().Set("Location", mergePathAndQuery(ctx.Request.URL.Path, ctx.Request.URL.RawQuery))
+			ctx.Writer.Header().Set("Location", sanitizeLocation(ctx.Request.URL.Path, ctx.Request.URL.RawQuery))
 
 			ctx.Writer.WriteHeader(http.StatusFound)
 			return
@@ -321,7 +392,7 @@ func (s *httpServer) onRequest(ctx *gin.Context) {
 
 		ctx.Request.URL.Path = fname
 
-		err = sx.muxer.handleRequest(ctx)
+		err = sx.muxer.handleRequest(ctx, isCDN)
 		if err != nil {
 			s.writeErrorNoLog(ctx, http.StatusInternalServerError, err)
 			return
@@ -340,13 +411,22 @@ func (s *httpServer) onRequest(ctx *gin.Context) {
 			return
 		}
 
-		sx := muxer.findSession(ctx)
+		var sx *session
+		if isCDN {
+			sx = muxer.getCDNSession()
+		} else {
+			sx = muxer.findSession(ctx)
+		}
 		if sx == nil {
 			// wait some seconds to delay brute force attacks
 			<-time.After(auth.PauseAfterError)
 
 			s.writeErrorNoLog(ctx, http.StatusUnauthorized, fmt.Errorf("authentication error"))
 			return
+		}
+
+		if isCDN {
+			sx.lastRequestTime.Store(time.Now().UnixNano())
 		}
 
 		ctx.Writer = &responseWriterCounter{
@@ -356,7 +436,7 @@ func (s *httpServer) onRequest(ctx *gin.Context) {
 
 		ctx.Request.URL.Path = fname
 
-		err = muxer.handleRequest(ctx)
+		err = muxer.handleRequest(ctx, isCDN)
 		if err != nil {
 			s.writeErrorNoLog(ctx, http.StatusInternalServerError, err)
 			return

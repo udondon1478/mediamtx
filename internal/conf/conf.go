@@ -52,8 +52,7 @@ func setAllNilSlicesToEmptyRecursive(rv reflect.Value) {
 	}
 
 	if rv.Kind() == reflect.Struct {
-		for i := range rv.NumField() {
-			field := rv.Field(i)
+		for _, field := range rv.Fields() {
 			switch field.Kind() {
 			case reflect.Slice:
 				if field.IsNil() {
@@ -365,6 +364,7 @@ type Conf struct {
 	HLSSegmentMaxSize  StringSize `json:"hlsSegmentMaxSize"`
 	HLSDirectory       string     `json:"hlsDirectory"`
 	HLSMuxerCloseAfter Duration   `json:"hlsMuxerCloseAfter"`
+	HLSCDNSecret       string     `json:"hlsCDNSecret"`
 
 	// WebRTC server
 	WebRTC                      bool              `json:"webrtc"`
@@ -935,6 +935,12 @@ func (conf *Conf) Validate(l logger.Writer) error {
 	if conf.HLS {
 		if conf.HLSAddress == "" {
 			return fmt.Errorf("'hlsAddress' must be set when HLS is enabled")
+		}
+	}
+
+	if conf.HLSCDNSecret != "" {
+		if !rePlainCredential.MatchString(conf.HLSCDNSecret) {
+			return fmt.Errorf("'hlsCDNSecret' contains unsupported characters. Supported are: %s", plainCredentialSupportedChars)
 		}
 	}
 
