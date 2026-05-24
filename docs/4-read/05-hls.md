@@ -1,10 +1,10 @@
 # HLS
 
-|           | supported codecs             |
-| --------- | ---------------------------- |
-| **video** | AV1, VP9, H265, H264         |
-| **audio** | Opus, MPEG-4 Audio (AAC)     |
-| **other** | KLV (MPEG-TS-based HLS only) |
+|           | supported codecs               |
+| --------- | ------------------------------ |
+| **video** | AV1, VP9, H265, H264           |
+| **audio** | Opus, FLAC, MPEG-4 Audio (AAC) |
+| **other** | KLV (MPEG-TS-based HLS only)   |
 
 HLS is a protocol that works by splitting streams into segments, and by serving these segments and a playlist with the HTTP protocol. You can use _MediaMTX_ to generate an HLS stream, that is accessible through a web page:
 
@@ -18,7 +18,7 @@ and can also be accessed without using the browsers, by software that supports t
 http://localhost:8888/mystream/index.m3u8
 ```
 
-Some clients that can read with HLS are [FFmpeg](06-ffmpeg.md), [GStreamer](07-gstreamer.md), [VLC](08-vlc.md) and [web browsers](13-web-browsers.md).
+Some clients that can read with HLS are [FFmpeg](07-ffmpeg.md), [GStreamer](08-gstreamer.md), [VLC](09-vlc.md) and [web browsers](06-web-browsers.md).
 
 _MediaMTX_ supports generating HLS in several variants (including Low-Latency mode), and provides various parameters to tune HLS generation. These are listed in the [configuration file](../5-references/1-configuration-file.md):
 
