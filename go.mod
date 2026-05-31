@@ -3,7 +3,7 @@ module github.com/bluenviron/mediamtx
 go 1.26.0
 
 require (
-	code.cloudfoundry.org/bytefmt v0.73.0
+	code.cloudfoundry.org/bytefmt v0.74.0
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/MicahParks/jwkset v0.11.0
 	github.com/MicahParks/keyfunc/v3 v3.8.0
@@ -27,20 +27,20 @@ require (
 	github.com/gookit/color v1.6.1
 	github.com/gorilla/websocket v1.5.3
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
-	github.com/matthewhartstonge/argon2 v1.5.3
+	github.com/matthewhartstonge/argon2 v1.5.4
 	github.com/minio/selfupdate v0.6.0
-	github.com/pion/ice/v4 v4.2.5
+	github.com/pion/ice/v4 v4.2.6
 	github.com/pion/interceptor v0.1.45
 	github.com/pion/logging v0.2.4
 	github.com/pion/rtcp v1.2.16
 	github.com/pion/rtp v1.10.2
 	github.com/pion/sdp/v3 v3.0.18
-	github.com/pion/transport/v4 v4.0.1
-	github.com/pion/webrtc/v4 v4.2.12
+	github.com/pion/transport/v4 v4.0.2
+	github.com/pion/webrtc/v4 v4.2.13
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/crypto v0.51.0
-	golang.org/x/net v0.54.0
-	golang.org/x/sys v0.44.0
+	golang.org/x/crypto v0.52.0
+	golang.org/x/net v0.55.0
+	golang.org/x/sys v0.45.0
 	golang.org/x/term v0.43.0
 )
 
@@ -80,10 +80,10 @@ require (
 	github.com/pion/dtls/v3 v3.1.2 // indirect
 	github.com/pion/mdns/v2 v2.1.0 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
-	github.com/pion/sctp v1.9.5 // indirect
+	github.com/pion/sctp v1.10.0 // indirect
 	github.com/pion/srtp/v3 v3.0.10 // indirect
 	github.com/pion/stun/v3 v3.1.2 // indirect
-	github.com/pion/turn/v5 v5.0.3 // indirect
+	github.com/pion/turn/v5 v5.0.4 // indirect
 	github.com/pjbgf/sha1cd v0.6.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
