@@ -11,3 +11,9 @@
 /mediamtx.exe
 *.backup
 *.log
+
+# Self-signed certificates (upstream)
+/auto.crt
+/auto.key
+/internal/core/auto.crt
+/internal/core/auto.key
