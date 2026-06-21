@@ -3,11 +3,11 @@ module github.com/bluenviron/mediamtx
 go 1.26.0
 
 require (
-	code.cloudfoundry.org/bytefmt v0.76.0
+	code.cloudfoundry.org/bytefmt v0.77.0
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/MicahParks/jwkset v0.11.0
 	github.com/MicahParks/keyfunc/v3 v3.8.0
-	github.com/abema/go-mp4 v1.6.0
+	github.com/abema/go-mp4 v1.7.1
 	github.com/alecthomas/kong v1.15.0
 	github.com/asticode/go-astits v1.15.0
 	github.com/bluenviron/gohlslib/v2 v2.4.0
@@ -39,7 +39,7 @@ require (
 	github.com/pion/webrtc/v4 v4.2.15
 	github.com/pires/go-proxyproto v0.12.0
 	github.com/quic-go/quic-go v0.60.0
-	github.com/quic-go/webtransport-go v0.10.0
+	github.com/quic-go/webtransport-go v0.11.0
 	github.com/stretchr/testify v1.11.1
 	github.com/wlynxg/anet v0.0.5
 	golang.org/x/crypto v0.53.0
@@ -107,5 +107,3 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/quic-go/webtransport-go => github.com/aler9/webtransport-go v0.0.0-20260604211153-27af9c338497
