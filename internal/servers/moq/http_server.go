@@ -172,13 +172,18 @@ func (s *httpServer) writeErrorNoLog(ctx *gin.Context, status int, err error) {
 
 func (s *httpServer) checkAuthOutsideSession(ctx *gin.Context, pathName string, publish bool) bool {
 	_, err := s.pathManager.FindPathConf(defs.PathFindPathConfReq{
+		Author: &logger.InlineWriter{
+			Parent: s,
+			Prefix: fmt.Sprintf("[conn %v]", httpp.RemoteAddr(ctx)),
+		},
 		AccessRequest: defs.PathAccessRequest{
-			Name:        pathName,
-			Query:       ctx.Request.URL.RawQuery,
-			Publish:     publish,
-			Proto:       auth.ProtocolMoQ,
-			Credentials: httpp.Credentials(ctx.Request),
-			IP:          net.ParseIP(ctx.ClientIP()),
+			Name:                 pathName,
+			Query:                ctx.Request.URL.RawQuery,
+			Publish:              publish,
+			Proto:                auth.ProtocolMoQ,
+			Credentials:          httpp.Credentials(ctx.Request),
+			IP:                   net.ParseIP(ctx.ClientIP()),
+			EnableAskCredentials: true,
 		},
 	})
 	if err != nil {
@@ -188,8 +193,6 @@ func (s *httpServer) checkAuthOutsideSession(ctx *gin.Context, pathName string, 
 				s.writeErrorNoLog(ctx, http.StatusUnauthorized, fmt.Errorf("authentication error"))
 				return false
 			}
-
-			s.Log(logger.Info, "connection %v failed to authenticate: %v", httpp.RemoteAddr(ctx), terr.Wrapped)
 
 			s.writeErrorNoLog(ctx, http.StatusUnauthorized, fmt.Errorf("authentication error"))
 			return false
