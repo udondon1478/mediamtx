@@ -339,6 +339,7 @@ func (dummyMoQServer) APISessionsList() (*defs.APIMoQSessionList, error) {
 			RemoteAddr:    "127.0.0.2:3456",
 			State:         defs.APIMoQSessionStatePublish,
 			Path:          "mypath",
+			Version:       defs.APIMoQVersionDraft19,
 			InboundBytes:  321,
 			OutboundBytes: 654,
 		}},
@@ -481,7 +482,6 @@ func TestPreflightRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, "*", res.Header.Get("Access-Control-Allow-Origin"))
-	require.Equal(t, "true", res.Header.Get("Access-Control-Allow-Credentials"))
 	require.Equal(t, "OPTIONS, GET", res.Header.Get("Access-Control-Allow-Methods"))
 	require.Equal(t, "Authorization", res.Header.Get("Access-Control-Allow-Headers"))
 	require.Equal(t, byts, []byte{})

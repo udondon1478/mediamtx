@@ -3,22 +3,22 @@ module github.com/bluenviron/mediamtx
 go 1.26.0
 
 require (
-	code.cloudfoundry.org/bytefmt v0.81.0
+	code.cloudfoundry.org/bytefmt v0.82.0
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/MicahParks/jwkset v0.11.0
 	github.com/MicahParks/keyfunc/v3 v3.8.0
 	github.com/abema/go-mp4 v1.7.1
 	github.com/alecthomas/kong v1.16.0
 	github.com/asticode/go-astits v1.15.0
-	github.com/bluenviron/gohlslib/v2 v2.4.0
-	github.com/bluenviron/gortmplib v0.4.0
-	github.com/bluenviron/gortsplib/v5 v5.6.1
-	github.com/bluenviron/mediacommon/v2 v2.9.1
+	github.com/bluenviron/gohlslib/v2 v2.4.1
+	github.com/bluenviron/gortmplib v0.4.1
+	github.com/bluenviron/gortsplib/v5 v5.6.2
+	github.com/bluenviron/mediacommon/v2 v2.9.2
 	github.com/datarhei/gosrt v0.11.0
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/gin-contrib/pprof v1.5.4
 	github.com/gin-gonic/gin v1.12.0
-	github.com/go-git/go-billy/v5 v5.9.0
+	github.com/go-git/go-billy/v5 v5.9.1
 	github.com/go-git/go-git/v5 v5.19.1
 	github.com/goccy/go-yaml v1.19.2
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -30,13 +30,13 @@ require (
 	github.com/matthewhartstonge/argon2 v1.5.6
 	github.com/minio/selfupdate v0.6.0
 	github.com/pion/ice/v4 v4.3.0
-	github.com/pion/interceptor v0.1.45
+	github.com/pion/interceptor v0.1.46
 	github.com/pion/logging v0.2.4
 	github.com/pion/rtcp v1.2.17
-	github.com/pion/rtp v1.10.3
+	github.com/pion/rtp v1.10.5
 	github.com/pion/sdp/v3 v3.0.19
 	github.com/pion/transport/v4 v4.0.2
-	github.com/pion/webrtc/v4 v4.2.16
+	github.com/pion/webrtc/v4 v4.2.17
 	github.com/pires/go-proxyproto v0.15.0
 	github.com/quic-go/quic-go v0.60.0
 	github.com/quic-go/webtransport-go v0.11.1
@@ -86,7 +86,7 @@ require (
 	github.com/pion/dtls/v3 v3.1.5 // indirect
 	github.com/pion/mdns/v2 v2.1.0 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
-	github.com/pion/sctp v1.10.3 // indirect
+	github.com/pion/sctp v1.11.0 // indirect
 	github.com/pion/srtp/v3 v3.0.12 // indirect
 	github.com/pion/stun/v3 v3.1.6 // indirect
 	github.com/pion/turn/v5 v5.0.12 // indirect
