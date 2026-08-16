@@ -415,6 +415,24 @@ func TestConfErrors(t *testing.T) {
 			"'rpiCamera' with same camera ID 0 is used as source in two paths, 'cam1' and 'cam2'",
 		},
 		{
+			"invalid rpi camera mjpeg width",
+			"paths:\n" +
+				"  cam:\n" +
+				"    source: rpiCamera\n" +
+				"    rpiCameraCodec: mjpeg\n" +
+				"    rpiCameraWidth: 1921\n",
+			"'rpiCameraWidth' must be a multiple of 8 and less than 2048 when using MJPEG",
+		},
+		{
+			"invalid rpi camera mjpeg height",
+			"paths:\n" +
+				"  cam:\n" +
+				"    source: rpiCamera\n" +
+				"    rpiCameraCodec: mjpeg\n" +
+				"    rpiCameraHeight: 2048\n",
+			"'rpiCameraHeight' must be a multiple of 8 and less than 2048 when using MJPEG",
+		},
+		{
 			"invalid srt publish passphrase",
 			"paths:\n" +
 				"  mypath:\n" +
@@ -822,6 +840,28 @@ func TestConfErrors(t *testing.T) {
 				"    - codec: H264\n" +
 				"    alwaysAvailableFile: /path/to/file.mp4\n",
 			"'alwaysAvailableFile' and 'alwaysAvailableTracks' cannot be used together",
+		},
+		{
+			"alwaysAvailableTracks g711 sampleRate too low",
+			"paths:\n" +
+				"  mypath:\n" +
+				"    alwaysAvailable: yes\n" +
+				"    alwaysAvailableTracks:\n" +
+				"    - codec: G711\n" +
+				"      sampleRate: 7999\n" +
+				"      channelCount: 1\n",
+			"sampleRate must be greater than or equal to 8000 for codec 'G711'",
+		},
+		{
+			"alwaysAvailableTracks mpeg4audio sampleRate too low",
+			"paths:\n" +
+				"  mypath:\n" +
+				"    alwaysAvailable: yes\n" +
+				"    alwaysAvailableTracks:\n" +
+				"    - codec: MPEG4Audio\n" +
+				"      sampleRate: 22049\n" +
+				"      channelCount: 1\n",
+			"sampleRate must be greater than or equal to 22050 for codec 'MPEG4Audio'",
 		},
 		{
 			"missing udp port",

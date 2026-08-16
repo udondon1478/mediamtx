@@ -3,18 +3,18 @@ module github.com/bluenviron/mediamtx
 go 1.26.0
 
 require (
-	code.cloudfoundry.org/bytefmt v0.84.0
+	code.cloudfoundry.org/bytefmt v0.85.0
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/MicahParks/jwkset v0.11.3
 	github.com/MicahParks/keyfunc/v3 v3.8.1
 	github.com/abema/go-mp4 v1.7.1
-	github.com/alecthomas/kong v1.16.0
+	github.com/alecthomas/kong v1.16.1
 	github.com/asticode/go-astits v1.15.0
 	github.com/bluenviron/gohlslib/v2 v2.4.2
-	github.com/bluenviron/gortmplib v1.0.0
+	github.com/bluenviron/gortmplib v1.0.1-0.20260813085012-9c63c23d6928
 	github.com/bluenviron/gortsplib/v5 v5.6.3
 	github.com/bluenviron/mediacommon/v2 v2.9.2
-	github.com/datarhei/gosrt v0.11.0
+	github.com/datarhei/gosrt v0.11.1-0.20260812091715-a77b40bb4b76
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/gin-contrib/pprof v1.5.4
 	github.com/gin-gonic/gin v1.12.0
@@ -29,7 +29,7 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/matthewhartstonge/argon2 v1.5.6
 	github.com/minio/selfupdate v0.6.0
-	github.com/pion/ice/v4 v4.4.0
+	github.com/pion/ice/v4 v4.4.1
 	github.com/pion/interceptor v0.1.47
 	github.com/pion/logging v0.2.4
 	github.com/pion/rtcp v1.2.17
@@ -42,8 +42,8 @@ require (
 	github.com/quic-go/webtransport-go v0.12.0
 	github.com/stretchr/testify v1.11.1
 	github.com/wlynxg/anet v0.0.5
-	golang.org/x/crypto v0.54.0
-	golang.org/x/net v0.57.0
+	golang.org/x/crypto v0.55.0
+	golang.org/x/net v0.58.0
 	golang.org/x/sync v0.22.0
 	golang.org/x/sys v0.47.0
 	golang.org/x/term v0.45.0
@@ -101,11 +101,9 @@ require (
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.mongodb.org/mongo-driver/v2 v2.5.0 // indirect
 	golang.org/x/arch v0.22.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/datarhei/gosrt => github.com/aler9/gosrt v0.0.0-20260804162707-b6afcc8add8f
