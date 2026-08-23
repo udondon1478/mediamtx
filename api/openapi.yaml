@@ -141,6 +141,7 @@ components:
         - rtpSource
         - webRTCSession
         - webRTCSource
+        - moqSource
         - moqSession
 
     ForwardDestProtocol:
@@ -151,6 +152,8 @@ components:
         - rtsp
         - rtsps
         - srt
+        - whip
+        - whips
 
     ForwardDestState:
       type: string
@@ -945,6 +948,9 @@ components:
         maxReaders:
           type: integer
           format: int64
+        moqTransport:
+          type: string
+          description: MoQ source
         mpegtsUDPReadBufferSize:
           type: integer
           format: uint64
@@ -1266,6 +1272,10 @@ components:
       type: object
       properties:
         dest:
+          type: string
+        destFingerprint:
+          type: string
+        whipBearerToken:
           type: string
 
     PathList:

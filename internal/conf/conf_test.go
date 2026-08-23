@@ -56,6 +56,7 @@ func TestConfFromFile(t *testing.T) {
 			RecordSegmentDuration:      3600000000000,
 			RecordDeleteAfter:          86400000000000,
 			RTSPUDPSourcePortRange:     []uint{32768, 60999},
+			MoQTransport:               MoQTransportQUIC,
 			WHEPSTUNGatherTimeout:      5 * Duration(time.Second),
 			WHEPHandshakeTimeout:       10 * Duration(time.Second),
 			WHEPTrackGatherTimeout:     2 * Duration(time.Second),
@@ -131,6 +132,10 @@ func TestConfFromFile(t *testing.T) {
 		{
 			name:   "wheps with placeholders",
 			source: "wheps://$G1:$G2/$G3",
+		},
+		{
+			name:   "moqt with placeholders",
+			source: "moqt://$G1:$G2/$G3",
 		},
 		{
 			name:   "udp with placeholders",
@@ -885,19 +890,34 @@ func TestConfErrors(t *testing.T) {
 			"username and password must be both provided",
 		},
 		{
+			"valid whip forward destination",
+			"paths:\n" +
+				"  mypath:\n" +
+				"    forward:\n" +
+				"    - dest: whip://localhost/stream/whip\n" +
+				"      destFingerprint: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n" +
+				"      whipBearerToken: mytoken\n",
+			"",
+		},
+		{
 			"invalid forward destination",
 			"paths:\n" +
 				"  mypath:\n" +
 				"    forward:\n" +
 				"    - dest: http://localhost/stream\n",
-			"invalid 'forward': entry 0: unsupported scheme 'http', supported ones are rtmp, rtmps, rtsp, rtsps and srt",
+			"invalid 'forward': entry 0: unsupported scheme 'http', supported ones are " +
+				"rtmp, rtmps, rtsp, rtsps, srt, whip and whips",
 		},
 	} {
 		t.Run(ca.name, func(t *testing.T) {
 			tmpf := createTempFile(t, []byte(ca.conf))
 
 			_, _, err := Load(tmpf, nil, nil)
-			require.EqualError(t, err, ca.err)
+			if ca.err == "" {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, ca.err)
+			}
 		})
 	}
 }

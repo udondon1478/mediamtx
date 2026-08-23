@@ -17,6 +17,7 @@ import (
 	forwardrtmp "github.com/bluenviron/mediamtx/internal/forward/rtmp"
 	forwardrtsp "github.com/bluenviron/mediamtx/internal/forward/rtsp"
 	forwardsrt "github.com/bluenviron/mediamtx/internal/forward/srt"
+	forwardwebrtc "github.com/bluenviron/mediamtx/internal/forward/webrtc"
 	"github.com/bluenviron/mediamtx/internal/logger"
 	"github.com/bluenviron/mediamtx/internal/stream"
 )
@@ -128,6 +129,12 @@ func destProtocol(dest string) defs.APIForwardDestProtocol {
 	case strings.HasPrefix(dest, "srt://"):
 		return defs.APIForwardDestProtocolSRT
 
+	case strings.HasPrefix(dest, "whip://"):
+		return defs.APIForwardDestProtocolWHIP
+
+	case strings.HasPrefix(dest, "whips://"):
+		return defs.APIForwardDestProtocolWHIPS
+
 	default:
 		panic("should not happen")
 	}
@@ -178,19 +185,21 @@ func (h *DestHandler) runOnce(strm *stream.Stream) error {
 	switch h.protocol {
 	case defs.APIForwardDestProtocolRTMP, defs.APIForwardDestProtocolRTMPS:
 		dest = &forwardrtmp.Dest{
-			Stream:       strm,
-			Dest:         resolvedDest,
-			WriteTimeout: h.WriteTimeout,
-			Parent:       h,
+			Stream:          strm,
+			Dest:            resolvedDest,
+			DestFingerprint: h.Conf.DestFingerprint,
+			WriteTimeout:    h.WriteTimeout,
+			Parent:          h,
 		}
 
 	case defs.APIForwardDestProtocolRTSP, defs.APIForwardDestProtocolRTSPS:
 		dest = &forwardrtsp.Dest{
-			Stream:       strm,
-			Dest:         resolvedDest,
-			ReadTimeout:  h.ReadTimeout,
-			WriteTimeout: h.WriteTimeout,
-			Parent:       h,
+			Stream:          strm,
+			Dest:            resolvedDest,
+			DestFingerprint: h.Conf.DestFingerprint,
+			ReadTimeout:     h.ReadTimeout,
+			WriteTimeout:    h.WriteTimeout,
+			Parent:          h,
 		}
 
 	case defs.APIForwardDestProtocolSRT:
@@ -200,6 +209,16 @@ func (h *DestHandler) runOnce(strm *stream.Stream) error {
 			WriteTimeout:      h.WriteTimeout,
 			UDPMaxPayloadSize: h.UDPMaxPayloadSize,
 			Parent:            h,
+		}
+
+	case defs.APIForwardDestProtocolWHIP, defs.APIForwardDestProtocolWHIPS:
+		dest = &forwardwebrtc.Dest{
+			Stream:          strm,
+			Dest:            resolvedDest,
+			DestFingerprint: h.Conf.DestFingerprint,
+			ReadTimeout:     h.ReadTimeout,
+			BearerToken:     h.Conf.WHIPBearerToken,
+			Parent:          h,
 		}
 
 	default:

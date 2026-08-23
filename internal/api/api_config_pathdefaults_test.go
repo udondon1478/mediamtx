@@ -12,15 +12,17 @@ import (
 )
 
 func TestConfigPathDefaultsGet(t *testing.T) {
-	cnf := tempConf(t, "api: yes\n")
+	cnf := tempConf(t, "api: yes\n"+
+		"pathDefaults:\n"+
+		"  readUser: myuser\n"+
+		"  readPass: mypass\n")
 
 	api := API{
 		Address:      "localhost:9997",
 		ReadTimeout:  conf.Duration(10 * time.Second),
 		WriteTimeout: conf.Duration(10 * time.Second),
-		Conf:         cnf,
 		AuthManager:  test.NilAuthManager,
-		Parent:       &testParent{},
+		Parent:       &testParent{conf: cnf},
 	}
 	err := api.Initialize()
 	require.NoError(t, err)
@@ -33,6 +35,7 @@ func TestConfigPathDefaultsGet(t *testing.T) {
 	var out map[string]any
 	httpRequest(t, hc, http.MethodGet, "http://localhost:9997/v3/config/pathdefaults/get", nil, &out)
 	require.Equal(t, "publisher", out["source"])
+	require.Equal(t, redactedCredential, out["readPass"])
 }
 
 func TestConfigPathDefaultsPatch(t *testing.T) {
@@ -42,9 +45,8 @@ func TestConfigPathDefaultsPatch(t *testing.T) {
 		Address:      "localhost:9997",
 		ReadTimeout:  conf.Duration(10 * time.Second),
 		WriteTimeout: conf.Duration(10 * time.Second),
-		Conf:         cnf,
 		AuthManager:  test.NilAuthManager,
-		Parent:       &testParent{},
+		Parent:       &testParent{conf: cnf},
 	}
 	err := api.Initialize()
 	require.NoError(t, err)
