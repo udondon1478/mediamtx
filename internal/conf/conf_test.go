@@ -343,6 +343,21 @@ func TestConfDeprecatedAuth(t *testing.T) {
 	}, conf.AuthInternalUsers)
 }
 
+func TestConfDeprecatedWebRTCICEServersIPv6(t *testing.T) {
+	tmpf := createTempFile(t, []byte(
+		"webrtcICEServers:\n"+
+			"- \"turn:myuser:mypass:[2001:db8::1]:3478?transport=tcp\"\n"))
+
+	conf, _, err := Load(tmpf, nil, nil)
+	require.NoError(t, err)
+
+	require.Equal(t, []WebRTCICEServer{{
+		URL:      "turn:[2001:db8::1]:3478?transport=tcp",
+		Username: "myuser",
+		Password: "mypass",
+	}}, conf.WebRTCICEServers2)
+}
+
 func TestConfErrors(t *testing.T) {
 	for _, ca := range []struct {
 		name string
@@ -791,6 +806,48 @@ func TestConfErrors(t *testing.T) {
 			"'hlsAddress' must be set when HLS is enabled",
 		},
 		{
+			"hlsSegmentCount below lowLatency variant minimum",
+			"hls: yes\n" +
+				"hlsVariant: lowLatency\n" +
+				"hlsSegmentCount: 6\n",
+			"'hlsSegmentCount' must be at least 7 when 'hlsVariant' is 'lowLatency'",
+		},
+		{
+			"hlsSegmentCount at lowLatency variant minimum",
+			"hls: yes\n" +
+				"hlsVariant: lowLatency\n" +
+				"hlsSegmentCount: 7\n",
+			"",
+		},
+		{
+			"hlsSegmentCount below fmp4 variant minimum",
+			"hls: yes\n" +
+				"hlsVariant: fmp4\n" +
+				"hlsSegmentCount: 2\n",
+			"'hlsSegmentCount' must be at least 3",
+		},
+		{
+			"hlsSegmentCount at fmp4 variant minimum",
+			"hls: yes\n" +
+				"hlsVariant: fmp4\n" +
+				"hlsSegmentCount: 3\n",
+			"",
+		},
+		{
+			"hlsSegmentCount zero with lowLatency variant",
+			"hls: yes\n" +
+				"hlsVariant: lowLatency\n" +
+				"hlsSegmentCount: 0\n",
+			"'hlsSegmentCount' must be at least 7 when 'hlsVariant' is 'lowLatency'",
+		},
+		{
+			"hlsSegmentCount not validated when HLS is disabled",
+			"hls: no\n" +
+				"hlsVariant: lowLatency\n" +
+				"hlsSegmentCount: 1\n",
+			"",
+		},
+		{
 			"missing webrtcAddress with WebRTC enabled",
 			"webrtc: yes\n" +
 				"webrtcAddress: ''\n",
@@ -890,6 +947,16 @@ func TestConfErrors(t *testing.T) {
 			"username and password must be both provided",
 		},
 		{
+			"valid moq forward destination",
+			"paths:\n" +
+				"  mypath:\n" +
+				"    forward:\n" +
+				"    - dest: moqt://localhost/stream\n" +
+				"      destFingerprint: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n" +
+				"      moqTransport: webtransport\n",
+			"",
+		},
+		{
 			"valid whip forward destination",
 			"paths:\n" +
 				"  mypath:\n" +
@@ -906,7 +973,7 @@ func TestConfErrors(t *testing.T) {
 				"    forward:\n" +
 				"    - dest: http://localhost/stream\n",
 			"invalid 'forward': entry 0: unsupported scheme 'http', supported ones are " +
-				"rtmp, rtmps, rtsp, rtsps, srt, whip and whips",
+				"rtmp, rtmps, rtsp, rtsps, srt, moqt, whip and whips",
 		},
 	} {
 		t.Run(ca.name, func(t *testing.T) {
