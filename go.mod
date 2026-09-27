@@ -3,7 +3,7 @@ module github.com/bluenviron/mediamtx
 go 1.26.0
 
 require (
-	code.cloudfoundry.org/bytefmt v0.90.0
+	code.cloudfoundry.org/bytefmt v0.91.0
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/MicahParks/jwkset v0.11.3
 	github.com/MicahParks/keyfunc/v3 v3.8.2
@@ -11,12 +11,12 @@ require (
 	github.com/alecthomas/kong v1.16.1
 	github.com/asticode/go-astits v1.16.0
 	github.com/bluenviron/gohlslib/v2 v2.4.5
-	github.com/bluenviron/gortmplib v1.0.3
+	github.com/bluenviron/gortmplib v1.0.4-0.20260924181358-abdd729fc341
 	github.com/bluenviron/gortsplib/v5 v5.6.6
 	github.com/bluenviron/mediacommon/v2 v2.9.5
 	github.com/datarhei/gosrt v0.11.1-0.20260812091715-a77b40bb4b76
 	github.com/fsnotify/fsnotify v1.10.1
-	github.com/gin-contrib/pprof v1.5.5
+	github.com/gin-contrib/pprof v1.5.6
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-git/go-billy/v5 v5.9.1
 	github.com/go-git/go-git/v5 v5.19.2
@@ -38,7 +38,7 @@ require (
 	github.com/pion/transport/v4 v4.1.1
 	github.com/pion/webrtc/v4 v4.2.20
 	github.com/pires/go-proxyproto v0.15.0
-	github.com/quic-go/quic-go v0.62.0
+	github.com/quic-go/quic-go v0.63.0
 	github.com/quic-go/webtransport-go v0.13.0
 	github.com/stretchr/testify v1.12.1
 	github.com/wlynxg/anet v0.0.5
