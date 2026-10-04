@@ -3,7 +3,7 @@ module github.com/bluenviron/mediamtx
 go 1.26.0
 
 require (
-	code.cloudfoundry.org/bytefmt v0.91.0
+	code.cloudfoundry.org/bytefmt v0.92.0
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/MicahParks/jwkset v0.11.3
 	github.com/MicahParks/keyfunc/v3 v3.8.2
@@ -18,7 +18,7 @@ require (
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/gin-contrib/pprof v1.5.6
 	github.com/gin-gonic/gin v1.12.0
-	github.com/go-git/go-billy/v5 v5.9.1
+	github.com/go-git/go-billy/v5 v5.9.2
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/goccy/go-yaml v1.19.2
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -30,9 +30,9 @@ require (
 	github.com/matthewhartstonge/argon2 v1.6.3
 	github.com/minio/selfupdate v0.6.0
 	github.com/pion/ice/v4 v4.4.2
-	github.com/pion/interceptor v0.1.48
+	github.com/pion/interceptor v0.1.49
 	github.com/pion/logging v0.2.4
-	github.com/pion/rtcp v1.2.17
+	github.com/pion/rtcp v1.2.18
 	github.com/pion/rtp v1.10.5
 	github.com/pion/sdp/v3 v3.0.20
 	github.com/pion/transport/v4 v4.1.1
