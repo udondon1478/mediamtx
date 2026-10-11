@@ -16,6 +16,8 @@ import (
 )
 
 func createTempFile(t *testing.T, byts []byte) string {
+	t.Helper()
+
 	tmpf, err := os.CreateTemp(t.TempDir(), "rtsp-")
 	require.NoError(t, err)
 	defer tmpf.Close()
@@ -323,14 +325,6 @@ func TestConfDeprecatedAuth(t *testing.T) {
 	require.Equal(t, []AuthInternalUser{
 		{
 			User: "any",
-			Permissions: []AuthInternalUserPermission{
-				{
-					Action: AuthActionPlayback,
-				},
-			},
-		},
-		{
-			User: "any",
 			IPs:  IPNetworks{mustParseCIDR("127.0.0.1/32"), mustParseCIDR("::1/128")},
 			Permissions: []AuthInternalUserPermission{
 				{
@@ -361,6 +355,10 @@ func TestConfDeprecatedAuth(t *testing.T) {
 			Permissions: []AuthInternalUserPermission{
 				{
 					Action: AuthActionRead,
+					Path:   "cam",
+				},
+				{
+					Action: AuthActionPlayback,
 					Path:   "cam",
 				},
 			},
