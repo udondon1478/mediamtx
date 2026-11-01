@@ -4,6 +4,7 @@ package stream
 import (
 	"os"
 	"reflect"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -249,6 +250,22 @@ func buildOfflineDesc(
 	return out, nil
 }
 
+// defaultSessionTitle is the SDP session name ("s=") used when the source
+// does not provide one (e.g. SRT / MPEG-TS publishers).
+//
+// When the title is empty, gortsplib emits "s= " (a single space, as suggested
+// by RFC 4566). AndroidX Media3 (ExoPlayer) trims every SDP line before parsing
+// and rejects the resulting empty "s=" line with "Malformed SDP line", so RTSP
+// playback fails on Android devices, including VRChat on standalone Meta Quest.
+const defaultSessionTitle = "Stream"
+
+func outDescTitle(title string) string {
+	if strings.TrimSpace(title) == "" {
+		return defaultSessionTitle
+	}
+	return title
+}
+
 func cloneFormatShallow(forma format.Format) format.Format {
 	v := reflect.New(reflect.TypeOf(forma).Elem())
 	v.Elem().Set(reflect.ValueOf(forma).Elem())
@@ -349,7 +366,7 @@ func (s *Stream) Initialize() error {
 	s.lastSystemTime = time.Now()
 
 	s.outDesc = &description.Session{
-		Title:  s.OrigDesc.Title,
+		Title:  outDescTitle(s.OrigDesc.Title),
 		Medias: make([]*description.Media, len(s.OrigDesc.Medias)),
 	}
 
